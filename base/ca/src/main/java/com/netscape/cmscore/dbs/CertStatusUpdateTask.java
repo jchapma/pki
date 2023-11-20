@@ -237,7 +237,7 @@ public class CertStatusUpdateTask implements Runnable {
             String filter,
             int pageSize) throws EBaseException {
 
-        logger.info("CertStatusUpdateTask: Processing revoked certs");
+        logger.info("jc71 CertStatusUpdateTask: Processing revoked certs");
 
         CertRecordList list = repository.findCertRecordsInList(
                 filter,

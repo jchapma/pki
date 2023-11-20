@@ -212,6 +212,46 @@ public class DBSSession implements AutoCloseable {
     }
 
     /**
+     * Prototype for a paged result search
+     *
+     * @param base starting point of the search
+     * @param filter search filter
+     * @param maxSize max number of entries
+     * @param sortAttribute Field to sort the records on
+     * @return search results
+     * @exception EBaseException failed to search
+     */
+    public DBSearchResults pagedResultSearch(
+            String base,
+            String filter,
+            int maxSize,
+            String sortAttribute
+            ) throws EBaseException {
+        return null;
+    }
+
+    /**
+     * Prototype for a paged result search
+     *
+     * @param base starting point of the search
+     * @param filter search filter
+     * @param maxSize max number of entries
+     * @param jumpTo entry to jump to
+     * @param sortAttribute Field to sort the records on
+     * @return search results
+     * @exception EBaseException failed to search
+     */
+    public DBSearchResults pagedResultSearch(
+            String base,
+            String filter,
+            int maxSize,
+            int jumpTo,
+            String sortAttribute
+            ) throws EBaseException {
+        return null;
+    }
+
+    /**
      * Sets persistent search to retrieve modified
      * certificate records.
      *

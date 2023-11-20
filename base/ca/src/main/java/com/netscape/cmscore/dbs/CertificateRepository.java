@@ -25,6 +25,9 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import javax.naming.ldap.Control;
+import javax.naming.ldap.PagedResultsControl;
+
 import org.mozilla.jss.netscape.security.x509.CertificateValidity;
 import org.mozilla.jss.netscape.security.x509.X500Name;
 import org.mozilla.jss.netscape.security.x509.X509CertImpl;
@@ -32,6 +35,7 @@ import org.mozilla.jss.netscape.security.x509.X509CertInfo;
 
 import com.netscape.certsrv.base.EBaseException;
 import com.netscape.certsrv.base.MetaInfo;
+import com.netscape.certsrv.base.PKIException;
 import com.netscape.certsrv.base.SessionContext;
 import com.netscape.certsrv.dbs.DBVirtualList;
 import com.netscape.certsrv.dbs.EDBRecordNotFoundException;
@@ -1110,6 +1114,49 @@ public class CertificateRepository extends Repository {
         }
         return v.elements();
 
+    }
+
+    /**
+     * Prototype for a paged result search
+     *
+     * @param filter search filter
+     * @param maxSize max size to return
+     * @param sortAttribute Attribute of CertRecord to sort the results
+     * @return a list of certificates
+     * @exception EBaseException failed to search
+     */
+    public Enumeration<Object> pagedResultSearchCertificates(String filter, int maxSize, String sortAttribute)
+            throws EBaseException {
+
+        Enumeration<Object> e = null;
+
+        logger.debug("pagedResultSearchCertificates 1 filter " + filter + " maxSize " + maxSize);
+        try (DBSSession s = dbSubsystem.createSession()) {
+            e = s.pagedResultSearch(mBaseDN, filter, maxSize, sortAttribute);
+        }
+        return e;
+    }
+
+        /**
+     * Prototype for a paged result search
+     *
+     * @param filter search filter
+     * @param maxSize max size to return
+     * @param jumpTo entry to jumo to
+     * @param sortAttribute Attribute of CertRecord to sort the results
+     * @return a list of certificates
+     * @exception EBaseException failed to search
+     */
+    public Enumeration<Object> pagedResultSearchCertificates(String filter, int maxSize, int jumpTo, String sortAttribute)
+            throws EBaseException {
+
+        Enumeration<Object> e = null;
+
+        logger.debug("pagedResultSearchCertificates 2 filter " + filter + " maxSize " + maxSize);
+        try (DBSSession s = dbSubsystem.createSession()) {
+            e = s.pagedResultSearch(mBaseDN, filter, maxSize, jumpTo, sortAttribute);
+        }
+        return e;
     }
 
 

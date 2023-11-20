@@ -43,6 +43,11 @@ import netscape.ldap.LDAPv3;
 import netscape.ldap.controls.LDAPPersistSearchControl;
 import netscape.ldap.controls.LDAPSortControl;
 
+import netscape.ldap.LDAPControl;
+import netscape.ldap.ber.stream.BEROctetString;
+import java.io.IOException;
+import java.math.BigInteger;
+
 /**
  * A class represents the database session. Operations
  * can be performed with a session.
@@ -354,6 +359,16 @@ public class LDAPSession extends DBSSession {
             LDAPSearchResults res = mConn.search(base,
                     LDAPv3.SCOPE_ONE, ldapfilter, ldapattrs, false, cons);
 
+
+            // jcxx can we read response cookie ?
+            // LDAPControl[] c = mConn.getResponseControls();
+
+            // if (c != null) {
+            //     for (LDAPControl control : c) {
+            //         logger.debug("jczz - c: " + c);
+            //     }
+            // }
+
             return new DBSearchResults(dbSubsystem.getRegistry(),
                     res);
         } catch (LDAPException e) {
@@ -461,6 +476,145 @@ public class LDAPSession extends DBSSession {
 
             LDAPSearchResults res = mConn.search(base,
                     LDAPv3.SCOPE_ONE, ldapfilter, ldapattrs, false, cons);
+
+            return new DBSearchResults(dbSubsystem.getRegistry(),
+                    res);
+        } catch (LDAPException e) {
+            if (e.getLDAPResultCode() == LDAPException.UNAVAILABLE)
+                throw new EDBNotAvailException(
+                        CMS.getUserMessage("CMS_DBS_INTERNAL_DIR_UNAVAILABLE"));
+            // XXX error handling, should not raise exception if
+            // entry not found
+            throw new EDBException("Unable to search LDAP record: " + e.getMessage(), e);
+        }
+    }
+
+    /* Pasted from some example online */
+    public static final byte[] intToByteArray(int value) {
+        return new byte[] {
+                (byte)(value >>> 24),
+                (byte)(value >>> 16),
+                (byte)(value >>> 8),
+                (byte)value};
+    }
+
+    /* Prototype for a paged result search */
+    @Override
+    public DBSearchResults pagedResultSearch(String base, String filter, int maxSize, String sortAttribute)
+            throws EBaseException {
+
+        try {
+            String ldapfilter = dbSubsystem.getRegistry().getFilter(filter);
+            String pgdressrchoid = "1.2.840.113556.1.4.319";
+            boolean critical = true;
+            LDAPControl[] myControls = new LDAPControl[2];
+            byte[] cookie = null;
+            logger.info("pagedResultSearch:  Searching " + base + " for " + ldapfilter);
+
+            String ldapattrs[] = null;
+
+            LDAPSearchConstraints cons = new LDAPSearchConstraints();
+
+            //cons.setMaxResults(maxSize);
+
+            logger.debug("pagedResultSearch - base: " + base + "filter: " + filter + "maxSize: " + maxSize + "sortAttr: " + sortAttribute);
+
+            if(sortAttribute != null) {
+                LDAPSortKey sortOrder = new LDAPSortKey( sortAttribute );
+                LDAPSortControl sortCtrl = new LDAPSortControl(sortOrder,true);
+                myControls[0] = new LDAPSortControl(sortOrder,true);
+            }
+
+            cookie[0] = (byte) 5;
+            if(maxSize > 0) {
+                try {
+                    myControls[1] = new LDAPPagedResultsControl(maxSize, critical, cookie);
+                } 
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            cons.setServerControls( myControls );
+
+            LDAPSearchResults res = mConn.search(base,
+                    LDAPv3.SCOPE_ONE, ldapfilter, ldapattrs, false, cons);
+
+
+            //can we read response cookie ?
+            LDAPControl[] c = mConn.getResponseControls();
+
+            if (c != null) {
+                for (LDAPControl control : c) {
+                    logger.debug("jczz - c: " + c);
+                }
+            }
+
+            return new DBSearchResults(dbSubsystem.getRegistry(),
+                    res);
+        } catch (LDAPException e) {
+            if (e.getLDAPResultCode() == LDAPException.UNAVAILABLE)
+                throw new EDBNotAvailException(
+                        CMS.getUserMessage("CMS_DBS_INTERNAL_DIR_UNAVAILABLE"));
+            // XXX error handling, should not raise exception if
+            // entry not found
+            throw new EDBException("Unable to search LDAP record: " + e.getMessage(), e);
+        }
+    }
+
+    /* Prototype for a paged result search */
+    @Override
+    public DBSearchResults pagedResultSearch(String base, String filter, int maxSize, int jumpTo, String sortAttribute)
+            throws EBaseException {
+
+        try {
+            String ldapfilter = dbSubsystem.getRegistry().getFilter(filter);
+            String pgdressrchoid = "1.2.840.113556.1.4.319";
+            boolean critical = true;
+            LDAPControl[] myControls = new LDAPControl[2];
+            byte[] cookie = null;
+            BigInteger bigInt = BigInteger.valueOf(jumpTo);    
+
+            logger.info("LDAPSession:  Searching " + base + " for " + ldapfilter);
+
+            String ldapattrs[] = null;
+
+            LDAPSearchConstraints cons = new LDAPSearchConstraints();
+
+            logger.debug("pagedResultSearch - base: " + base + "filter: " + filter + "maxSize: " + maxSize + "sortAttr: " + sortAttribute);
+
+            if(sortAttribute != null) {
+                LDAPSortKey sortOrder = new LDAPSortKey( sortAttribute );
+                LDAPSortControl sortCtrl = new LDAPSortControl(sortOrder,true);
+                myControls[0] = new LDAPSortControl(sortOrder,true);
+            }
+
+            cookie = bigInt.toByteArray();
+              
+            if(maxSize > 0) {
+                try {
+                    myControls[1] = new LDAPPagedResultsControl(maxSize, critical, cookie);
+                } 
+                catch(IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+            cons.setServerControls( myControls );
+
+            LDAPSearchResults res = mConn.search(base,
+                    LDAPv3.SCOPE_ONE, ldapfilter, ldapattrs, false, cons);
+
+
+            //can we read response cookie ?
+            LDAPControl[] c = mConn.getResponseControls();
+
+            if (c != null) {
+                for (LDAPControl control : c) {
+                    logger.debug("jczz - c: " + c);
+                }
+            }
 
             return new DBSearchResults(dbSubsystem.getRegistry(),
                     res);

@@ -19,7 +19,9 @@ package com.netscape.cms.servlet.cert;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.StringTokenizer;
@@ -47,6 +49,10 @@ import org.mozilla.jss.netscape.security.x509.X509Key;
 
 import com.netscape.ca.CertificateAuthority;
 import com.netscape.certsrv.base.EBaseException;
+import com.netscape.certsrv.base.PKIException;
+import com.netscape.certsrv.cert.CertDataInfo;
+import com.netscape.certsrv.cert.CertDataInfos;
+import com.netscape.certsrv.dbs.certdb.CertId;
 import com.netscape.cms.servlet.base.CMSServlet;
 import com.netscape.cms.servlet.common.CMSRequest;
 import com.netscape.cms.servlet.common.CMSTemplate;
@@ -356,6 +362,42 @@ public class ListCerts extends CMSServlet {
         }
     }
 
+        CertDataInfo createCertDataInfo(CertRecord record) throws EBaseException, InvalidKeyException {
+        CertDataInfo info = new CertDataInfo();
+
+        CertId id = new CertId(record.getSerialNumber());
+        info.setID(id);
+
+        X509Certificate cert = record.getCertificate();
+        info.setIssuerDN(cert.getIssuerDN().toString());
+        info.setSubjectDN(cert.getSubjectDN().toString());
+        info.setStatus(record.getStatus());
+        info.setVersion(cert.getVersion());
+        info.setType(cert.getType());
+
+        PublicKey key = cert.getPublicKey();
+        if (key instanceof X509Key) {
+            X509Key x509Key = (X509Key)key;
+            info.setKeyAlgorithmOID(x509Key.getAlgorithmId().getOID().toString());
+
+            if (x509Key.getAlgorithmId().toString().equalsIgnoreCase("RSA")) {
+                RSAPublicKey rsaKey = new RSAPublicKey(x509Key.getEncoded());
+                info.setKeyLength(rsaKey.getKeySize());
+            }
+        }
+
+        info.setNotValidBefore(cert.getNotBefore());
+        info.setNotValidAfter(cert.getNotAfter());
+
+        info.setIssuedOn(record.getCreateTime());
+        info.setIssuedBy(record.getIssuedBy());
+
+        info.setRevokedOn(record.getRevokedOn());
+        info.setRevokedBy(record.getRevokedBy());
+
+        return info;
+    }
+
     private void processCertFilter(
             CMSTemplateParams argSet,
             ArgBlock header,
@@ -380,6 +422,7 @@ public class ListCerts extends CMSServlet {
         logger.debug("ListCerts: filter: " + filter);
 
         BigInteger serialToVal = MINUS_ONE;
+        CertDataInfos infos = new CertDataInfos();
 
         try {
             if (serialTo != null) {
@@ -399,7 +442,8 @@ public class ListCerts extends CMSServlet {
         logger.debug("ListCerts: reverse: " + reverse);
         logger.debug("ListCerts: hardJumpTo: " + hardJumpTo);
 
-        String jumpTo = sentinel.toString();
+        int jumpTo = sentinel.intValue();
+
         int pSize = 0;
         if (reverse) {
             if (!hardJumpTo) //reverse gets one more
@@ -411,14 +455,10 @@ public class ListCerts extends CMSServlet {
 
         logger.debug("ListCerts: pSize: " + pSize);
 
-        logger.debug("ListCerts: calling findCertRecordsInList() with jumpTo");
-        CertRecordList list = mCertDB.findCertRecordsInList(
-                filter, (String[]) null, jumpTo, hardJumpTo, "serialno",
-                pSize);
-        // retrive maxCount + 1 entries
-        logger.debug("ListCerts: list size: " + list.getSize());
+        CertRecordList list;
 
-        Enumeration<CertRecord> e = list.getCertRecords(0, maxCount);
+        Enumeration<Object> e = mCertDB.pagedResultSearchCertificates(filter, pSize, jumpTo, "serialno");
+        int total = 0;
 
         CertRecordList tolist = null;
         int toCurIndex = 0;

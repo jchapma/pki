@@ -64,8 +64,7 @@ public class LDAPPostReadControl extends LDAPControl {
 
         ByteArrayInputStream in = new ByteArrayInputStream(value);
         int[] numRead = new int[1];
-        BERTag tag = (BERTag)
-            BERElement.getElement(new JDAPBERTagDecoder(), in, numRead);
+        BERTag tag = (BERTag) BERElement.getElement(new JDAPBERTagDecoder(), in, numRead);
         BERSequence seq = (BERSequence)tag.getValue();
 
         BEROctetString name = (BEROctetString)seq.elementAt(0);

@@ -208,29 +208,24 @@ public class CertService extends PKIService implements CertResource {
         logger.info("Search filter: " + filter);
 
         CertDataInfos infos = new CertDataInfos();
+
         try {
-            CertRecordList list = repo.findCertRecordsInList(filter, null, "serialno", size);
-            int total = list.getSize();
-            logger.info("Search results: " + total);
+            Enumeration<Object> certRecords = repo.pagedResultSearchCertificates(filter, size, "serialNo");
+            int total = 0;
 
-            // return entries in the requested page
-            for (int i = start; i < start + size && i < total; i++) {
-                CertRecord record = list.getCertRecord(i);
-
-                if (record == null) {
-                    logger.warn("Certificate record not found");
-                    throw new PKIException("Certificate record not found");
-                }
-
+            while (certRecords != null && certRecords.hasMoreElements()) {
+                CertRecord record = (CertRecord) certRecords.nextElement();
+                if (record == null)
+                    break;
                 infos.addEntry(createCertDataInfo(record));
+                total++;
             }
-
             infos.setTotal(total);
         } catch (Exception e) {
             logger.error("Unable to search for certificates: " + e.getMessage(), e);
             throw new PKIException("Unable to search for certificates: " + e.getMessage(), e);
         }
-
+        
         return createOKResponse(infos);
     }
 

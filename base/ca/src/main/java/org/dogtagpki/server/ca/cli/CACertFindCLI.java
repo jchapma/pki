@@ -125,7 +125,7 @@ public class CACertFindCLI extends CommandCLI {
         try {
             CertificateRepository certificateRepository = new CertificateRepository(secureRandom, dbSubsystem);
             certificateRepository.init();
-
+            logger.info("jc70 - execute");
             CertRecordList list = certificateRepository.findCertRecordsInList(filter, null, "serialno", size);
             int total = list.getSize();
 

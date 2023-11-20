@@ -116,6 +116,8 @@ public class CertRecordList {
             throws EBaseException {
         Vector<CertRecord> entries = new Vector<>();
 
+        logger.debug("jc32 - getCertRecords");
+
         for (int i = startidx; i <= endidx; i++) {
             CertRecord element = mVlist.getElementAt(i);
 
@@ -124,6 +126,8 @@ public class CertRecordList {
                 entries.addElement(element);
             }
         }
+
+        logger.debug("jc33 - getCertRecords");
         return entries.elements();
     }
 
@@ -137,6 +141,8 @@ public class CertRecordList {
      */
     public CertRecord getCertRecord(int index)
             throws EBaseException {
+
+        logger.debug("jc33 - getCertRecord");
 
         return mVlist.getElementAt(index);
 
